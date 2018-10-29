@@ -9,6 +9,7 @@ const router = express.Router();
 
 /* ========== GET/READ ALL ITEMS ========== */
 router.get('/', (req, res, next) => {
+  console.log('testing');
   const { searchTerm, folderId, tagId } = req.query;
 
   let filter = {};
