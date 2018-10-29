@@ -44,13 +44,21 @@ app.use((req, res, next) => {
 });
 
 // Custom Error Handler
-app.use((err, req, res, next) => {
-  if (err.status) {
-    const errBody = Object.assign({}, err, { message: err.message });
-    res.status(err.status).json(errBody);
-  } else {
-    res.status(500).json({ message: 'Internal Server Error' });
-  }
+// app.use((err, req, res, next) => {
+//   if (err.status) {
+//     const errBody = Object.assign({}, err, { message: err.message });
+//     res.status(err.status).json(errBody);
+//   } else {
+//     res.status(500).json({ message: 'Internal Server Error' });
+//   }
+// });
+
+app.use(function (err, req, res, next) {
+  res.status(err.status || 500);
+  res.json({
+    message: err.message,
+    error: app.get('env') === 'development' ? err : {}
+  });
 });
 
 // Listen for incoming connections
