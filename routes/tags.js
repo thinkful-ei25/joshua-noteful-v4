@@ -126,19 +126,13 @@ router.delete('/:id', (req, res, next) => {
     return next(err);
   }
 
-  // const tagRemovePromise = Tag.findByIdAndRemove(id);
+  const tagRemovePromise = Tag.findOneAndRemove({_id: id, userId});
 
-  // const noteUpdatePromise = Note.updateMany(
-  //   { tags: id },
-  //   { $pull: { tags: id } }
-  // );
-  Tag.findOneAndDelete({_id: id, userId})  
-    .then((removed) => {
-      if(!removed){
-        return
-      }
-      return Note.updateMany({tags: id}, { $pull: {tags: id}});
-    })
+  const noteUpdatePromise = Note.updateMany(
+    { tags: id },
+    { $pull: { tags: id } }
+  );
+  Promise.all([tagRemovePromise], noteUpdatePromise)
     .then(() => res.sendStatus(204))
     .catch(err => {
       next(err);

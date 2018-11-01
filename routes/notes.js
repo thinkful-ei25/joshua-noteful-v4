@@ -4,14 +4,48 @@ const express = require('express');
 const mongoose = require('mongoose');
 
 const Note = require('../models/note');
+const Folder = require('../models/folder');
+const Tag = require('../models/tag');
 const passport = require('passport');
 const router = express.Router();
 router.use('/', passport.authenticate('jwt', { session: false, failWithError: true }));
 
 
+
+// VALIDATORS
+
+function validateFolderId(folderId, userId){
+  if (!mongoose.Types.ObjectId.isValid(folderId)) {
+    const err = new Error('The `folderId` is not valid');
+    err.status = 400;
+    return Promise.reject(err);
+  }
+  return Folder.findOne({ _id: folderId, userId }).count()
+    .then(count => {
+      if (count === 0) {
+        const err = new Error('The `folderId` is not valid');
+        err.status = 400;
+        return Promise.reject(err);
+      }
+    });
+    
+
+}
+
+function validateTagId(tags, userId){
+  Tag.find({ _id: { $in: tags }, userId }).then((results) => {
+    const ownedTagIds = results.map(tag => tag.id.toString());
+    const badIds = tags.filter(tag => !ownedTagIds.includes(tag));
+    if (badIds.length) {
+      const err = new Error('These aren\'t your tags');
+      err.status = 422;
+      return next(err);
+    }
+  });
+}
+
 /* ========== GET/READ ALL ITEMS ========== */
 router.get('/', (req, res, next) => {
-  console.log('testing');
   const { searchTerm, folderId, tagId} = req.query;
   const userId = req.user.id;
   let filter = { userId };
@@ -69,6 +103,8 @@ router.get('/:id', (req, res, next) => {
 router.post('/', (req, res, next) => {
   const { title, content, folderId, tags } = req.body;
   const userId = req.user.id;
+  validateFolderId(folderId, userId);
+  validateTagId(tags, userId);
 
   /***** Never trust users - validate input *****/
   if (!title) {
@@ -108,9 +144,11 @@ router.post('/', (req, res, next) => {
 
 /* ========== PUT/UPDATE A SINGLE ITEM ========== */
 router.put('/:id', (req, res, next) => {
-  const { id } = req.params;
+  const {folderId, tags } = req.body;
   const userId = req.user.id;
-
+  const { id } = req.params;
+  validateFolderId(folderId, userId);
+  validateTagId(tags, userId);
   const toUpdate = {};
   const updateableFields = ['title', 'content', 'folderId', 'tags'];
 
