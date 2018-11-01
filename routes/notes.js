@@ -15,12 +15,15 @@ router.use('/', passport.authenticate('jwt', { session: false, failWithError: tr
 // VALIDATORS
 
 function validateFolderId(folderId, userId){
+  if(folderId === undefined){
+    return Promise.resolve();
+  }
   if (!mongoose.Types.ObjectId.isValid(folderId)) {
     const err = new Error('The `folderId` is not valid');
     err.status = 400;
     return Promise.reject(err);
   }
-  return Folder.findOne({ _id: folderId, userId }).count()
+  return Folder.count({ _id: folderId, userId })
     .then(count => {
       if (count === 0) {
         const err = new Error('The `folderId` is not valid');
@@ -28,20 +31,31 @@ function validateFolderId(folderId, userId){
         return Promise.reject(err);
       }
     });
-    
-
 }
-
 function validateTagId(tags, userId){
-  Tag.find({ _id: { $in: tags }, userId }).then((results) => {
-    const ownedTagIds = results.map(tag => tag.id.toString());
-    const badIds = tags.filter(tag => !ownedTagIds.includes(tag));
-    if (badIds.length) {
-      const err = new Error('These aren\'t your tags');
-      err.status = 422;
-      return next(err);
-    }
-  });
+  if (tags === undefined){
+    return Promise.resolve();
+  }
+  if(!Array.isArray(tags)){
+    const err = new Error('your tags need to be an array');
+    err.status = 400;
+    return Promise.reject(err);
+  }
+  const badIds = tags.filter(tag => !mongoose.Types.ObjectId.isValid(tag));
+  if (badIds.length) {
+    const err = new Error('These has an invalid tag your tags');
+    err.status = 400;
+    return (err);
+  }
+  return Tag.find({$and: [{_id: {$in: tags}, userId}]})
+    .then(results => {
+      if(tags.length !== results.length){
+        const err = new Error('This contains a tag that is not yours');
+        err.status = 400;
+        return Promise.reject(err);
+      }
+    });
+
 }
 
 /* ========== GET/READ ALL ITEMS ========== */
@@ -185,7 +199,6 @@ router.put('/:id', (req, res, next) => {
       return next(err);
     }
   }
-  console.log(res + 'this is out of block');
 
 
 
