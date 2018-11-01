@@ -149,13 +149,7 @@ router.put('/:id', (req, res, next) => {
   }
   console.log(res + 'this is out of block');
 
-  if (userId !== res){
-    console.log(res.userId + 'this is inside the block and an error');
-    const err = new Error('you are not the user');
-    err.status = 401;
-    return next(err);
-  }
-  
+
 
   if (toUpdate.folderId === '') {
     delete toUpdate.folderId;
@@ -163,8 +157,7 @@ router.put('/:id', (req, res, next) => {
   }
 
 
-
-  Note.findByIdAndUpdate(id, toUpdate, { new: true })
+  Note.findOneAndUpdate({ _id: id, userId }, toUpdate, { new: true })
     .then(result => {
       if (result) {
         res.json(result);
@@ -180,6 +173,7 @@ router.put('/:id', (req, res, next) => {
 /* ========== DELETE/REMOVE A SINGLE ITEM ========== */
 router.delete('/:id', (req, res, next) => {
   const { id } = req.params;
+  const userId = req.user.id;
 
   /***** Never trust users - validate input *****/
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -188,7 +182,7 @@ router.delete('/:id', (req, res, next) => {
     return next(err);
   }
 
-  Note.findByIdAndRemove(id)
+  Note.findOneAndDelete({ _id: id, userId })
     .then(() => {
       res.sendStatus(204);
     })
