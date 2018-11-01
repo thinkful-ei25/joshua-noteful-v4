@@ -16,7 +16,7 @@ router.use('/', passport.authenticate('jwt', { session: false, failWithError: tr
 router.get('/', (req, res, next) => {
   const userId = req.user.id;
 
-  Folder.find(userId)
+  Folder.find({userId})
     .sort('name')
     .then(results => {
       res.json(results);
