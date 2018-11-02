@@ -14,7 +14,7 @@ router.use('/', passport.authenticate('jwt', { session: false, failWithError: tr
 /* ========== GET/READ ALL ITEMS ========== */
 router.get('/', (req, res, next) => {
   const userId = req.user.id;
-  Tag.find(userId)
+  Tag.find({userId})
     .sort('name')
     .then(results => {
       res.json(results);
@@ -126,13 +126,13 @@ router.delete('/:id', (req, res, next) => {
     return next(err);
   }
 
-  const tagRemovePromise = Tag.findOneAndRemove({_id: id, userId});
+  const tagRemovePromise = Tag.findOneAndDelete({_id: id, userId});
 
   const noteUpdatePromise = Note.updateMany(
     { tags: id },
     { $pull: { tags: id } }
   );
-  Promise.all([tagRemovePromise], noteUpdatePromise)
+  Promise.all([tagRemovePromise, noteUpdatePromise])
     .then(() => res.sendStatus(204))
     .catch(err => {
       next(err);
