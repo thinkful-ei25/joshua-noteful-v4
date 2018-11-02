@@ -18,7 +18,7 @@ chai.use(chaiHttp);
 const expect = chai.expect;
 const sandbox = sinon.createSandbox();
 
-describe.only('Noteful API - Folders', function () {
+describe('Noteful API - Folders', function () {
 
   before(function () {
     return mongoose.connect(TEST_MONGODB_URI, { useNewUrlParser: true, useCreateIndex : true })
@@ -372,23 +372,29 @@ describe.only('Noteful API - Folders', function () {
         });
     });
 
-    // it('should return an error when given a duplicate name', function () {
-    //   return Folder.find().limit(2)
-    //     .then(results => {
-    //       const [item1, item2] = results;
-    //       item1.name = item2.name;
-    //       return chai.request(app)
-    //         .put(`/api/folders/${item1.id}`)
-    //         .set('Authorization', `Bearer ${token}`)
-    //         .send(item1);
-    //     })
-    //     .then(res => {
-    //       expect(res).to.have.status(400);
-    //       expect(res).to.be.json;
-    //       expect(res.body).to.be.a('object');
-    //       expect(res.body.message).to.equal('Folder name already exists');
-    //     });
-    // });
+    it('should return an error when given a duplicate name', function () {
+
+      const dbPromise = Folder.find({userId: user.id}).limit(2);
+      const apiPromise = chai.request(app)
+        .get('/api/folders')
+        .set('Authorization', `Bearer ${token}`);
+      return Promise.all([dbPromise, apiPromise])
+        .then(results => {
+          const [dbresponse, apiresponse] = results;
+          const [item1, item2] = dbresponse;
+          item1.name = item2.name;
+          return chai.request(app)
+            .put(`/api/folders/${item1.id}`)
+            .set('Authorization', `Bearer ${token}`)
+            .send(item1);
+        })
+        .then(res => {
+          expect(res).to.have.status(400);
+          expect(res).to.be.json;
+          expect(res.body).to.be.a('object');
+          expect(res.body.message).to.equal('Folder name already exists');
+        });
+    });
 
     it('should catch errors and respond properly', function () {
       sandbox.stub(Folder.schema.options.toJSON, 'transform').throws('FakeError');
