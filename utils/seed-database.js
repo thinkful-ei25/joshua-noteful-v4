@@ -10,8 +10,7 @@ const Tag = require('../models/tag');
 const User = require('../models/user');
 
 const { folders, notes, tags, users } = require('../db/data');
-
-console.log(`Connecting to mongodb at ${MONGODB_URI}`);
+'use strict';
 mongoose.connect(MONGODB_URI, { useNewUrlParser: true, useCreateIndex : true })
   .then(() => {
     console.info('Deleting Data...');
